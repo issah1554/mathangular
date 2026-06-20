@@ -1,0 +1,79 @@
+import { Component } from '@angular/core';
+
+@Component({
+  selector: 'app-home-page',
+  template: `
+    <section class="mx-auto grid min-h-[calc(100dvh-73px)] w-full max-w-6xl items-center gap-10 px-6 py-10 md:grid-cols-[1fr_0.8fr] lg:px-8">
+      <div class="max-w-2xl">
+        <p class="mb-4 text-sm font-semibold uppercase tracking-wide text-primary">
+          MathAngular
+        </p>
+
+        <h1 class="text-4xl font-semibold leading-tight text-main-950 md:text-6xl">
+          Learn math with clear steps and focused practice.
+        </h1>
+
+        <p class="mt-5 max-w-xl text-base leading-7 text-main-700 md:text-lg">
+          MathAngular is a simple Angular app for working through formulas,
+          examples, and short exercises without the noise of a full textbook.
+        </p>
+
+        <div class="mt-8 flex flex-wrap gap-3">
+          <a
+            class="rounded-md bg-primary px-5 py-3 text-sm font-semibold text-white transition hover:bg-primary-600"
+            href="#practice"
+          >
+            Start practice
+          </a>
+          <a
+            class="rounded-md border border-main-300 px-5 py-3 text-sm font-semibold text-main-800 transition hover:border-primary hover:text-primary"
+            href="#topics"
+          >
+            View topics
+          </a>
+        </div>
+      </div>
+
+      <aside
+        class="rounded-lg border border-main-200 bg-main-0 p-5 shadow-sm"
+        aria-label="MathAngular preview"
+      >
+        <div class="flex items-center justify-between border-b border-main-200 pb-4">
+          <p class="text-sm font-semibold text-main-800">Daily problem</p>
+          <span class="rounded-md bg-success-100 px-2 py-1 text-xs font-semibold text-success-700">
+            Algebra
+          </span>
+        </div>
+
+        <div class="space-y-4 py-5">
+          <div class="rounded-md bg-main-50 p-4">
+            <p class="text-sm text-main-600">Solve for x</p>
+            <p class="mt-2 text-2xl font-semibold text-main-950">2x + 7 = 19</p>
+          </div>
+
+          <div class="space-y-3 text-sm text-main-700">
+            <p><span class="font-semibold text-primary">Step 1:</span> subtract 7 from both sides.</p>
+            <p><span class="font-semibold text-primary">Step 2:</span> divide the result by 2.</p>
+            <p><span class="font-semibold text-primary">Answer:</span> x = 6</p>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-3 gap-3 border-t border-main-200 pt-4 text-center">
+          <div>
+            <p class="text-lg font-semibold text-main-950">12</p>
+            <p class="text-xs text-main-600">Topics</p>
+          </div>
+          <div>
+            <p class="text-lg font-semibold text-main-950">48</p>
+            <p class="text-xs text-main-600">Examples</p>
+          </div>
+          <div>
+            <p class="text-lg font-semibold text-main-950">90%</p>
+            <p class="text-xs text-main-600">Mastery</p>
+          </div>
+        </div>
+      </aside>
+    </section>
+  `,
+})
+export class HomePage {}

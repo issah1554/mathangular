@@ -1,10 +1,13 @@
 import { TestBed } from '@angular/core/testing';
+import { provideRouter } from '@angular/router';
 import { App } from './app';
+import { routes } from './app.routes';
 
 describe('App', () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [App],
+      providers: [provideRouter(routes)],
     }).compileComponents();
   });
 
@@ -14,12 +17,11 @@ describe('App', () => {
     expect(app).toBeTruthy();
   });
 
-  it('should render landing page title', async () => {
+  it('should render the app shell', async () => {
     const fixture = TestBed.createComponent(App);
     await fixture.whenStable();
     const compiled = fixture.nativeElement as HTMLElement;
-    expect(compiled.querySelector('h1')?.textContent).toContain(
-      'Learn math with clear steps and focused practice.',
-    );
+    expect(compiled.querySelector('nav')?.textContent).toContain('MathAngular');
+    expect(compiled.querySelector('nav')?.textContent).toContain('Simulations');
   });
 });
