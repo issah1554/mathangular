@@ -16,13 +16,6 @@ type Simulation = {
         <p class="text-sm font-semibold uppercase tracking-wide text-primary">
           Simulations
         </p>
-        <h1 class="mt-3 text-3xl font-semibold leading-tight text-main-950 md:text-5xl">
-          Available math simulations
-        </h1>
-        <p class="mt-4 text-base leading-7 text-main-700 md:text-lg">
-          Explore visual, interactive lessons that make abstract math concepts easier to test,
-          compare, and understand.
-        </p>
       </div>
 
       <div class="mt-8 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
