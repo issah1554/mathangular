@@ -1,4 +1,5 @@
 import { Component } from '@angular/core';
+import { RouterLink } from '@angular/router';
 
 type Simulation = {
   title: string;
@@ -6,10 +7,12 @@ type Simulation = {
   description: string;
   level: string;
   status: string;
+  route?: string;
 };
 
 @Component({
   selector: 'app-simulations-page',
+  imports: [RouterLink],
   template: `
     <section class="mx-auto w-full max-w-6xl px-6 py-10 lg:px-8">
       <div class="max-w-3xl">
@@ -41,7 +44,10 @@ type Simulation = {
               <span class="text-xs font-semibold uppercase tracking-wide text-success-700">
                 {{ simulation.status }}
               </span>
-              <a class="text-sm font-semibold text-primary transition hover:text-primary-700" href="#">
+              <a
+                class="text-sm font-semibold text-primary transition hover:text-primary-700"
+                [routerLink]="simulation.route ?? '/simulations'"
+              >
                 Open
               </a>
             </div>
@@ -94,6 +100,14 @@ export class SimulationsPage {
       description: 'Run repeated trials and compare experimental probability against expected outcomes.',
       level: 'Beginner',
       status: 'Available',
+    },
+    {
+      title: 'Satellite Trilateration',
+      topic: 'Geometry',
+      description: 'Use distances from multiple satellites to locate a receiver and see how GPS positioning works.',
+      level: 'Intermediate',
+      status: 'Available',
+      route: '/simulations/satellite-trilateration',
     },
   ];
 }
