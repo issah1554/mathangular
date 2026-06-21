@@ -19,162 +19,144 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
   template: `
     <section class="fixed inset-0 overflow-hidden bg-black">
       <h1 class="sr-only">Satellite Trilateration Earth Globe</h1>
-      <canvas #globeCanvas class="block size-full"></canvas>
+      <canvas #globeCanvas class="absolute inset-0 h-full w-full"></canvas>
 
-      <button
-        class="absolute left-4 top-4 z-10 grid size-10 place-items-center rounded-md border border-white/15 bg-black/45 text-sm font-semibold text-white backdrop-blur transition hover:bg-black/65"
-        type="button"
-        [attr.aria-label]="controlsHidden ? 'Show controls' : 'Hide controls'"
-        (click)="controlsHidden = !controlsHidden"
+      <div class="absolute bottom-4 left-4 z-10 flex items-center gap-2 rounded-md border border-white/15 bg-black/45 p-2 text-white backdrop-blur">
+        <a
+          class="grid h-9 min-w-12 place-items-center rounded-md px-2 text-sm font-semibold transition hover:bg-white/15"
+          routerLink="/simulations"
+          aria-label="Back to simulations"
+        >
+          Back
+        </a>
+        <button
+          class="grid size-9 place-items-center rounded-md text-lg font-semibold transition hover:bg-white/15"
+          type="button"
+          aria-label="Zoom in"
+          (click)="zoomIn()"
+        >
+          +
+        </button>
+        <button
+          class="grid size-9 place-items-center rounded-md text-lg font-semibold transition hover:bg-white/15"
+          type="button"
+          aria-label="Zoom out"
+          (click)="zoomOut()"
+        >
+          -
+        </button>
+        <button
+          class="grid h-9 min-w-14 place-items-center rounded-md px-2 text-sm font-semibold transition hover:bg-white/15"
+          type="button"
+          aria-label="Reset view"
+          (click)="resetView()"
+        >
+          Reset
+        </button>
+        <button
+          class="grid h-9 min-w-14 place-items-center rounded-md px-2 text-sm font-semibold transition hover:bg-white/15"
+          type="button"
+          [attr.aria-label]="autoRotate ? 'Pause rotation' : 'Resume rotation'"
+          (click)="toggleAutoRotate()"
+        >
+          {{ autoRotate ? 'Pause' : 'Play' }}
+        </button>
+      </div>
+
+      <div
+        class="absolute bottom-0 right-0 top-0 z-20 w-[min(360px,100vw)] transition-transform duration-300 ease-out"
+        [class.translate-x-full]="drawerCollapsed"
       >
-        {{ controlsHidden ? '+' : '-' }}
-      </button>
+        <button
+          class="absolute left-0 top-1/2 z-30 grid h-12 w-8 -translate-x-full -translate-y-1/2 place-items-center rounded-l-md border border-r-0 border-white/15 bg-black/60 text-sm font-semibold text-white backdrop-blur transition hover:bg-black/80"
+          type="button"
+          [attr.aria-label]="drawerCollapsed ? 'Expand parameters drawer' : 'Collapse parameters drawer'"
+          (click)="drawerCollapsed = !drawerCollapsed"
+        >
+          {{ drawerCollapsed ? '<' : '>' }}
+        </button>
 
-      @if (!controlsHidden) {
-        <div class="absolute bottom-4 left-1/2 z-10 flex -translate-x-1/2 items-center gap-2 rounded-md border border-white/15 bg-black/45 p-2 text-white backdrop-blur">
-          <a
-            class="grid h-9 min-w-12 place-items-center rounded-md px-2 text-sm font-semibold transition hover:bg-white/15"
-            routerLink="/simulations"
-            aria-label="Back to simulations"
-          >
-            Back
-          </a>
-          <button
-            class="grid size-9 place-items-center rounded-md text-lg font-semibold transition hover:bg-white/15"
-            type="button"
-            aria-label="Zoom in"
-            (click)="zoomIn()"
-          >
-            +
-          </button>
-          <button
-            class="grid size-9 place-items-center rounded-md text-lg font-semibold transition hover:bg-white/15"
-            type="button"
-            aria-label="Zoom out"
-            (click)="zoomOut()"
-          >
-            -
-          </button>
-          <button
-            class="grid h-9 min-w-14 place-items-center rounded-md px-2 text-sm font-semibold transition hover:bg-white/15"
-            type="button"
-            aria-label="Reset view"
-            (click)="resetView()"
-          >
-            Reset
-          </button>
-          <button
-            class="grid h-9 min-w-14 place-items-center rounded-md px-2 text-sm font-semibold transition hover:bg-white/15"
-            type="button"
-            [attr.aria-label]="autoRotate ? 'Pause rotation' : 'Resume rotation'"
-            (click)="toggleAutoRotate()"
-          >
-            {{ autoRotate ? 'Pause' : 'Play' }}
-          </button>
+        <aside class="h-full overflow-y-auto border-l border-white/15 bg-black/60 p-5 text-white shadow-2xl backdrop-blur-md">
+          <div>
+            <p class="text-xs font-semibold uppercase tracking-wide text-white/60">Simulation</p>
+            <h2 class="mt-1 text-lg font-semibold">Parameters</h2>
+          </div>
+
+        <div class="mt-5 space-y-5">
+          <label class="block">
+            <span class="flex items-center justify-between text-sm font-medium">
+              Satellites
+              <span class="text-white/60">{{ satelliteCount }}</span>
+            </span>
+            <input
+              class="mt-2 w-full accent-cyan-400"
+              type="range"
+              min="3"
+              max="8"
+              step="1"
+              [value]="satelliteCount"
+              (input)="satelliteCount = inputValue($event)"
+            />
+          </label>
+
+          <label class="block">
+            <span class="flex items-center justify-between text-sm font-medium">
+              Signal radius
+              <span class="text-white/60">{{ signalRadius }}x</span>
+            </span>
+            <input
+              class="mt-2 w-full accent-cyan-400"
+              type="range"
+              min="1"
+              max="5"
+              step="0.1"
+              [value]="signalRadius"
+              (input)="signalRadius = inputValue($event)"
+            />
+          </label>
+
+          <label class="block">
+            <span class="flex items-center justify-between text-sm font-medium">
+              Measurement noise
+              <span class="text-white/60">{{ measurementNoise }} m</span>
+            </span>
+            <input
+              class="mt-2 w-full accent-cyan-400"
+              type="range"
+              min="0"
+              max="50"
+              step="1"
+              [value]="measurementNoise"
+              (input)="measurementNoise = inputValue($event)"
+            />
+          </label>
+
+          <label class="block">
+            <span class="flex items-center justify-between text-sm font-medium">
+              Receiver altitude
+              <span class="text-white/60">{{ receiverAltitude }} km</span>
+            </span>
+            <input
+              class="mt-2 w-full accent-cyan-400"
+              type="range"
+              min="0"
+              max="500"
+              step="10"
+              [value]="receiverAltitude"
+              (input)="receiverAltitude = inputValue($event)"
+            />
+          </label>
         </div>
-      }
 
-      <button
-        class="absolute right-4 top-4 z-20 rounded-md border border-white/15 bg-black/45 px-3 py-2 text-sm font-semibold text-white backdrop-blur transition hover:bg-black/65"
-        type="button"
-        [attr.aria-label]="drawerHidden ? 'Show simulation parameters' : 'Hide simulation parameters'"
-        (click)="drawerHidden = !drawerHidden"
-      >
-        {{ drawerHidden ? 'Parameters' : 'Hide' }}
-      </button>
-
-      @if (!drawerHidden) {
-        <aside class="absolute bottom-4 right-4 top-16 z-20 w-[min(340px,calc(100vw-2rem))] overflow-y-auto rounded-md border border-white/15 bg-black/55 p-4 text-white shadow-2xl backdrop-blur-md">
-          <div class="flex items-start justify-between gap-3">
-            <div>
-              <p class="text-xs font-semibold uppercase tracking-wide text-white/60">Simulation</p>
-              <h2 class="mt-1 text-lg font-semibold">Parameters</h2>
-            </div>
-            <button
-              class="rounded-md px-2 py-1 text-sm font-semibold text-white/70 transition hover:bg-white/10 hover:text-white"
-              type="button"
-              aria-label="Close parameters drawer"
-              (click)="drawerHidden = true"
-            >
-              x
-            </button>
-          </div>
-
-          <div class="mt-5 space-y-5">
-            <label class="block">
-              <span class="flex items-center justify-between text-sm font-medium">
-                Satellites
-                <span class="text-white/60">{{ satelliteCount }}</span>
-              </span>
-              <input
-                class="mt-2 w-full accent-cyan-400"
-                type="range"
-                min="3"
-                max="8"
-                step="1"
-                [value]="satelliteCount"
-                (input)="satelliteCount = inputValue($event)"
-              />
-            </label>
-
-            <label class="block">
-              <span class="flex items-center justify-between text-sm font-medium">
-                Signal radius
-                <span class="text-white/60">{{ signalRadius }}x</span>
-              </span>
-              <input
-                class="mt-2 w-full accent-cyan-400"
-                type="range"
-                min="1"
-                max="5"
-                step="0.1"
-                [value]="signalRadius"
-                (input)="signalRadius = inputValue($event)"
-              />
-            </label>
-
-            <label class="block">
-              <span class="flex items-center justify-between text-sm font-medium">
-                Measurement noise
-                <span class="text-white/60">{{ measurementNoise }} m</span>
-              </span>
-              <input
-                class="mt-2 w-full accent-cyan-400"
-                type="range"
-                min="0"
-                max="50"
-                step="1"
-                [value]="measurementNoise"
-                (input)="measurementNoise = inputValue($event)"
-              />
-            </label>
-
-            <label class="block">
-              <span class="flex items-center justify-between text-sm font-medium">
-                Receiver altitude
-                <span class="text-white/60">{{ receiverAltitude }} km</span>
-              </span>
-              <input
-                class="mt-2 w-full accent-cyan-400"
-                type="range"
-                min="0"
-                max="500"
-                step="10"
-                [value]="receiverAltitude"
-                (input)="receiverAltitude = inputValue($event)"
-              />
-            </label>
-          </div>
-
-          <div class="mt-6 rounded-md border border-white/10 bg-white/5 p-3">
-            <p class="text-sm font-semibold">Current setup</p>
-            <p class="mt-2 text-sm leading-6 text-white/70">
-              {{ satelliteCount }} satellites, {{ signalRadius }}x signal radius,
-              {{ measurementNoise }} m noise, {{ receiverAltitude }} km altitude.
-            </p>
-          </div>
+        <div class="mt-6 rounded-md border border-white/10 bg-white/5 p-3">
+          <p class="text-sm font-semibold">Current setup</p>
+          <p class="mt-2 text-sm leading-6 text-white/70">
+            {{ satelliteCount }} satellites, {{ signalRadius }}x signal radius,
+            {{ measurementNoise }} m noise, {{ receiverAltitude }} km altitude.
+          </p>
+        </div>
         </aside>
-      }
+      </div>
     </section>
   `,
 })
@@ -193,8 +175,7 @@ export class SatelliteTrilaterationPage implements AfterViewInit, OnDestroy {
   private earth?: THREE.Mesh;
   private stars?: THREE.Points;
   private earthTexture?: THREE.Texture;
-  protected controlsHidden = false;
-  protected drawerHidden = false;
+  protected drawerCollapsed = false;
   protected autoRotate = true;
   protected satelliteCount = 4;
   protected signalRadius = 2.5;
@@ -233,16 +214,18 @@ export class SatelliteTrilaterationPage implements AfterViewInit, OnDestroy {
     const canvas = this.globeCanvas.nativeElement;
 
     this.scene = new THREE.Scene();
-    this.camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 100);
-    this.camera.position.set(0, 0, 4.2);
+    this.scene.background = new THREE.Color(0x020617);
+    this.camera = new THREE.PerspectiveCamera(45, 1, 0.1, 100);
+    this.camera.position.set(0, 0, 4.6);
 
     this.renderer = new THREE.WebGLRenderer({
       antialias: true,
       canvas,
       powerPreference: 'high-performance',
     });
+    this.renderer.setClearColor(0x020617, 1);
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-    this.renderer.setSize(window.innerWidth, window.innerHeight, false);
+    this.resize();
 
     this.controls = new OrbitControls(this.camera, canvas);
     this.controls.enableDamping = true;
@@ -252,14 +235,16 @@ export class SatelliteTrilaterationPage implements AfterViewInit, OnDestroy {
     this.controls.enablePan = false;
     this.controls.autoRotate = this.autoRotate;
     this.controls.autoRotateSpeed = 0.35;
-    this.controls.minDistance = 2.1;
+    this.controls.minDistance = 2.35;
     this.controls.maxDistance = 7;
     this.controls.rotateSpeed = 0.65;
 
-    const earthGeometry = new THREE.SphereGeometry(1.35, 96, 96);
+    const earthGeometry = new THREE.SphereGeometry(1.7, 96, 96);
     const earthMaterial = new THREE.MeshStandardMaterial({
-      color: 0xffffff,
-      roughness: 0.9,
+      color: 0x2c8ee8,
+      emissive: 0x071b33,
+      emissiveIntensity: 0.35,
+      roughness: 0.72,
       metalness: 0,
     });
 
@@ -271,16 +256,17 @@ export class SatelliteTrilaterationPage implements AfterViewInit, OnDestroy {
       texture.colorSpace = THREE.SRGBColorSpace;
       texture.anisotropy = this.renderer?.capabilities.getMaxAnisotropy() ?? 1;
       this.earthTexture = texture;
+      earthMaterial.color.set(0xffffff);
       earthMaterial.map = texture;
       earthMaterial.needsUpdate = true;
     });
 
     const atmosphere = new THREE.Mesh(
-      new THREE.SphereGeometry(1.39, 96, 96),
+      new THREE.SphereGeometry(1.76, 96, 96),
       new THREE.MeshBasicMaterial({
         color: 0x63c6ff,
         transparent: true,
-        opacity: 0.13,
+        opacity: 0.18,
         side: THREE.BackSide,
       }),
     );
@@ -289,9 +275,10 @@ export class SatelliteTrilaterationPage implements AfterViewInit, OnDestroy {
     this.stars = this.createStars();
     this.scene.add(this.stars);
 
-    this.scene.add(new THREE.AmbientLight(0x9eb7d8, 1.5));
+    this.scene.add(new THREE.AmbientLight(0xb7cff5, 2.2));
+    this.scene.add(new THREE.HemisphereLight(0xbfe9ff, 0x06111f, 1.3));
 
-    const keyLight = new THREE.DirectionalLight(0xffffff, 3);
+    const keyLight = new THREE.DirectionalLight(0xffffff, 3.8);
     keyLight.position.set(4, 2, 5);
     this.scene.add(keyLight);
 
@@ -319,9 +306,13 @@ export class SatelliteTrilaterationPage implements AfterViewInit, OnDestroy {
       return;
     }
 
-    this.camera.aspect = window.innerWidth / window.innerHeight;
+    const canvas = this.globeCanvas.nativeElement;
+    const width = canvas.clientWidth || window.innerWidth;
+    const height = canvas.clientHeight || window.innerHeight;
+
+    this.camera.aspect = width / height;
     this.camera.updateProjectionMatrix();
-    this.renderer.setSize(window.innerWidth, window.innerHeight, false);
+    this.renderer.setSize(width, height, false);
   };
 
   protected zoomIn(): void {
@@ -337,7 +328,7 @@ export class SatelliteTrilaterationPage implements AfterViewInit, OnDestroy {
       return;
     }
 
-    this.camera.position.set(0, 0, 4.2);
+    this.camera.position.set(0, 0, 4.6);
     this.controls.target.set(0, 0, 0);
     this.controls.update();
   }
