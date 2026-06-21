@@ -22,7 +22,7 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
       <canvas #globeCanvas class="block size-full"></canvas>
 
       <button
-        class="absolute right-4 top-4 z-10 grid size-10 place-items-center rounded-md border border-white/15 bg-black/45 text-sm font-semibold text-white backdrop-blur transition hover:bg-black/65"
+        class="absolute left-4 top-4 z-10 grid size-10 place-items-center rounded-md border border-white/15 bg-black/45 text-sm font-semibold text-white backdrop-blur transition hover:bg-black/65"
         type="button"
         [attr.aria-label]="controlsHidden ? 'Show controls' : 'Hide controls'"
         (click)="controlsHidden = !controlsHidden"
@@ -33,11 +33,11 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
       @if (!controlsHidden) {
         <div class="absolute bottom-4 left-1/2 z-10 flex -translate-x-1/2 items-center gap-2 rounded-md border border-white/15 bg-black/45 p-2 text-white backdrop-blur">
           <a
-            class="grid size-9 place-items-center rounded-md text-sm font-semibold transition hover:bg-white/15"
+            class="grid h-9 min-w-12 place-items-center rounded-md px-2 text-sm font-semibold transition hover:bg-white/15"
             routerLink="/simulations"
             aria-label="Back to simulations"
           >
-            ←
+            Back
           </a>
           <button
             class="grid size-9 place-items-center rounded-md text-lg font-semibold transition hover:bg-white/15"
@@ -56,22 +56,124 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
             -
           </button>
           <button
-            class="grid size-9 place-items-center rounded-md text-sm font-semibold transition hover:bg-white/15"
+            class="grid h-9 min-w-14 place-items-center rounded-md px-2 text-sm font-semibold transition hover:bg-white/15"
             type="button"
             aria-label="Reset view"
             (click)="resetView()"
           >
-            ↺
+            Reset
           </button>
           <button
-            class="grid size-9 place-items-center rounded-md text-sm font-semibold transition hover:bg-white/15"
+            class="grid h-9 min-w-14 place-items-center rounded-md px-2 text-sm font-semibold transition hover:bg-white/15"
             type="button"
             [attr.aria-label]="autoRotate ? 'Pause rotation' : 'Resume rotation'"
             (click)="toggleAutoRotate()"
           >
-            {{ autoRotate ? 'Ⅱ' : '▶' }}
+            {{ autoRotate ? 'Pause' : 'Play' }}
           </button>
         </div>
+      }
+
+      <button
+        class="absolute right-4 top-4 z-20 rounded-md border border-white/15 bg-black/45 px-3 py-2 text-sm font-semibold text-white backdrop-blur transition hover:bg-black/65"
+        type="button"
+        [attr.aria-label]="drawerHidden ? 'Show simulation parameters' : 'Hide simulation parameters'"
+        (click)="drawerHidden = !drawerHidden"
+      >
+        {{ drawerHidden ? 'Parameters' : 'Hide' }}
+      </button>
+
+      @if (!drawerHidden) {
+        <aside class="absolute bottom-4 right-4 top-16 z-20 w-[min(340px,calc(100vw-2rem))] overflow-y-auto rounded-md border border-white/15 bg-black/55 p-4 text-white shadow-2xl backdrop-blur-md">
+          <div class="flex items-start justify-between gap-3">
+            <div>
+              <p class="text-xs font-semibold uppercase tracking-wide text-white/60">Simulation</p>
+              <h2 class="mt-1 text-lg font-semibold">Parameters</h2>
+            </div>
+            <button
+              class="rounded-md px-2 py-1 text-sm font-semibold text-white/70 transition hover:bg-white/10 hover:text-white"
+              type="button"
+              aria-label="Close parameters drawer"
+              (click)="drawerHidden = true"
+            >
+              x
+            </button>
+          </div>
+
+          <div class="mt-5 space-y-5">
+            <label class="block">
+              <span class="flex items-center justify-between text-sm font-medium">
+                Satellites
+                <span class="text-white/60">{{ satelliteCount }}</span>
+              </span>
+              <input
+                class="mt-2 w-full accent-cyan-400"
+                type="range"
+                min="3"
+                max="8"
+                step="1"
+                [value]="satelliteCount"
+                (input)="satelliteCount = inputValue($event)"
+              />
+            </label>
+
+            <label class="block">
+              <span class="flex items-center justify-between text-sm font-medium">
+                Signal radius
+                <span class="text-white/60">{{ signalRadius }}x</span>
+              </span>
+              <input
+                class="mt-2 w-full accent-cyan-400"
+                type="range"
+                min="1"
+                max="5"
+                step="0.1"
+                [value]="signalRadius"
+                (input)="signalRadius = inputValue($event)"
+              />
+            </label>
+
+            <label class="block">
+              <span class="flex items-center justify-between text-sm font-medium">
+                Measurement noise
+                <span class="text-white/60">{{ measurementNoise }} m</span>
+              </span>
+              <input
+                class="mt-2 w-full accent-cyan-400"
+                type="range"
+                min="0"
+                max="50"
+                step="1"
+                [value]="measurementNoise"
+                (input)="measurementNoise = inputValue($event)"
+              />
+            </label>
+
+            <label class="block">
+              <span class="flex items-center justify-between text-sm font-medium">
+                Receiver altitude
+                <span class="text-white/60">{{ receiverAltitude }} km</span>
+              </span>
+              <input
+                class="mt-2 w-full accent-cyan-400"
+                type="range"
+                min="0"
+                max="500"
+                step="10"
+                [value]="receiverAltitude"
+                (input)="receiverAltitude = inputValue($event)"
+              />
+            </label>
+          </div>
+
+          <div class="mt-6 rounded-md border border-white/10 bg-white/5 p-3">
+            <p class="text-sm font-semibold">Current setup</p>
+            <p class="mt-2 text-sm leading-6 text-white/70">
+              {{ satelliteCount }} satellites, {{ signalRadius }}x signal radius,
+              {{ measurementNoise }} m noise, {{ receiverAltitude }} km altitude.
+            </p>
+          </div>
+        </aside>
       }
     </section>
   `,
@@ -92,7 +194,12 @@ export class SatelliteTrilaterationPage implements AfterViewInit, OnDestroy {
   private stars?: THREE.Points;
   private earthTexture?: THREE.Texture;
   protected controlsHidden = false;
+  protected drawerHidden = false;
   protected autoRotate = true;
+  protected satelliteCount = 4;
+  protected signalRadius = 2.5;
+  protected measurementNoise = 8;
+  protected receiverAltitude = 0;
 
   ngAfterViewInit(): void {
     if (!isPlatformBrowser(this.platformId)) {
@@ -241,6 +348,10 @@ export class SatelliteTrilaterationPage implements AfterViewInit, OnDestroy {
     if (this.controls) {
       this.controls.autoRotate = this.autoRotate;
     }
+  }
+
+  protected inputValue(event: Event): number {
+    return Number((event.target as HTMLInputElement).value);
   }
 
   private moveCameraBy(multiplier: number): void {
