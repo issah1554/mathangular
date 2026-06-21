@@ -1,7 +1,6 @@
 import { Routes } from '@angular/router';
 import { HomePage } from './home.page';
 import { SimulationsPage } from './simulations.page';
-import { SatelliteTrilaterationPage } from './simulations/satellite-trilateration/satellite-trilateration.page';
 
 export const routes: Routes = [
   {
@@ -14,7 +13,10 @@ export const routes: Routes = [
   },
   {
     path: 'simulations/satellite-trilateration',
-    component: SatelliteTrilaterationPage,
+    loadComponent: () =>
+      import('./simulations/satellite-trilateration/satellite-trilateration.page').then(
+        (module) => module.SatelliteTrilaterationPage,
+      ),
   },
   {
     path: 'simulations/satelite-trilatelation',
