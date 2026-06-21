@@ -123,6 +123,15 @@ type AxisGizmoItem = {
                 <button
                   class="border-b-2 px-0 pb-2 transition"
                   type="button"
+                  [style.border-color]="activeDrawerTab === 'globe' ? 'rgb(34 211 238)' : 'transparent'"
+                  [style.color]="activeDrawerTab === 'globe' ? 'rgb(255 255 255)' : 'rgb(255 255 255 / 0.55)'"
+                  (click)="activeDrawerTab = 'globe'"
+                >
+                  Globe
+                </button>
+                <button
+                  class="border-b-2 px-0 pb-2 transition"
+                  type="button"
                   [style.border-color]="activeDrawerTab === 'satellites' ? 'rgb(34 211 238)' : 'transparent'"
                   [style.color]="activeDrawerTab === 'satellites' ? 'rgb(255 255 255)' : 'rgb(255 255 255 / 0.55)'"
                   (click)="activeDrawerTab = 'satellites'"
@@ -141,39 +150,56 @@ type AxisGizmoItem = {
               </div>
 
               @if (activeDrawerTab === 'satellites') {
-              <div class="mt-5">
-                <button
-                  class="flex h-10 w-full items-center justify-center rounded-md border border-cyan-300/50 bg-cyan-400 text-sm font-semibold text-black transition hover:bg-cyan-300 disabled:cursor-not-allowed disabled:border-white/10 disabled:bg-white/10 disabled:text-white/35"
-                  type="button"
-                  [disabled]="satelliteCount >= satelliteControls.length"
-                  (click)="addSatellite()"
-                >
-                  Add satellite
-                </button>
-              </div>
-
-                <div class="mt-3 space-y-2">
+                <div class="mt-5 space-y-2">
               @for (satellite of visibleSatelliteControls; track satellite.id) {
-                <button
-                  class="flex w-full items-center justify-between rounded-md border border-white/10 bg-white/5 p-3 text-left transition hover:bg-white/10"
-                  type="button"
-                  [attr.aria-label]="'Open satellite ' + satellite.id + ' parameters'"
-                  (click)="selectedSatelliteId = satellite.id"
-                >
-                  <span class="flex items-center gap-2">
-                    <span
-                      class="size-3 rounded-full"
-                      [style.background-color]="satellite.color"
-                    ></span>
-                    <span class="text-sm font-semibold">Satellite {{ satellite.id }}</span>
-                  </span>
-                  <span class="text-xs font-semibold text-white/50">
-                    {{ satellite.paused ? 'Paused' : satellite.speed.toFixed(1) + 'x' }}
-                  </span>
-                </button>
+                <div class="flex items-center gap-2 rounded-md border border-white/10 bg-white/5 p-2 transition hover:bg-white/10">
+                  <button
+                    class="flex min-w-0 flex-1 items-center justify-between gap-3 text-left"
+                    type="button"
+                    [attr.aria-label]="'Open satellite ' + satellite.id + ' parameters'"
+                    (click)="selectedSatelliteId = satellite.id"
+                  >
+                    <span class="flex min-w-0 items-center gap-2">
+                      <span
+                        class="size-3 shrink-0 rounded-full"
+                        [style.background-color]="satellite.color"
+                      ></span>
+                      <span class="truncate text-sm font-semibold">Satellite {{ satellite.id }}</span>
+                    </span>
+                    <span class="shrink-0 text-xs font-semibold text-white/50">
+                      {{ satellite.paused ? 'Paused' : satellite.speed.toFixed(1) + 'x' }}
+                    </span>
+                  </button>
+                  <button
+                    class="grid size-8 place-items-center rounded-md border border-white/10 text-xs font-bold transition hover:bg-white/10"
+                    type="button"
+                    [attr.aria-label]="satellite.paused ? 'Play satellite ' + satellite.id : 'Pause satellite ' + satellite.id"
+                    (click)="toggleSatellitePaused(satellite.id)"
+                  >
+                    {{ satellite.paused ? '▶️' : '⏸️' }}
+                  </button>
+                  <button
+                    class="grid size-8 place-items-center rounded-md border border-red-300/30 text-xs font-bold text-red-200 transition hover:bg-red-500/20"
+                    type="button"
+                    [attr.aria-label]="'Remove satellite ' + satellite.id"
+                    (click)="removeSatellite(satellite.id)"
+                  >
+                    x
+                  </button>
+                </div>
               }
                 </div>
-              } @else {
+                <div class="mt-3 flex justify-end">
+                  <button
+                    class="h-9 rounded-md border border-cyan-300/50 bg-cyan-400 px-3 text-sm font-semibold text-black transition hover:bg-cyan-300 disabled:cursor-not-allowed disabled:border-white/10 disabled:bg-white/10 disabled:text-white/35"
+                    type="button"
+                    [disabled]="activeSatelliteIds.length >= satelliteControls.length"
+                    (click)="addSatellite()"
+                  >
+                    Add satellite
+                  </button>
+                </div>
+              } @else if (activeDrawerTab === 'receiver') {
                 <div class="mt-5 space-y-5">
                   <label class="block">
                     <span class="flex items-center justify-between text-sm font-medium">
@@ -212,6 +238,75 @@ type AxisGizmoItem = {
                     <p class="mt-2 text-sm leading-6 text-white/70">
                       Receiver altitude is {{ receiverAltitude }} km with {{ measurementNoise }} m measurement noise.
                     </p>
+                  </div>
+                </div>
+              } @else {
+                <div class="mt-5 space-y-3">
+                  <button
+                    class="flex h-10 w-full items-center justify-between rounded-md border border-white/10 bg-white/5 px-3 text-sm font-semibold transition hover:bg-white/10"
+                    type="button"
+                    [attr.aria-label]="autoRotate ? 'Pause globe rotation' : 'Resume globe rotation'"
+                    (click)="toggleAutoRotate()"
+                  >
+                    <span>Globe rotation</span>
+                    <span class="text-cyan-300">{{ autoRotate ? 'Pause' : 'Play' }}</span>
+                  </button>
+
+                  <div class="grid grid-cols-3 gap-2">
+                    <button
+                      class="h-10 rounded-md border border-white/10 bg-white/5 text-sm font-semibold transition hover:bg-white/10"
+                      type="button"
+                      aria-label="Zoom in"
+                      (click)="zoomIn()"
+                    >
+                      Zoom +
+                    </button>
+                    <button
+                      class="h-10 rounded-md border border-white/10 bg-white/5 text-sm font-semibold transition hover:bg-white/10"
+                      type="button"
+                      aria-label="Zoom out"
+                      (click)="zoomOut()"
+                    >
+                      Zoom -
+                    </button>
+                    <button
+                      class="h-10 rounded-md border border-white/10 bg-white/5 text-sm font-semibold transition hover:bg-white/10"
+                      type="button"
+                      aria-label="Reset globe view"
+                      (click)="resetView()"
+                    >
+                      Reset
+                    </button>
+                  </div>
+
+                  <div class="rounded-md border border-white/10 bg-white/5 p-3">
+                    <p class="text-sm font-semibold">Orientation</p>
+                    <div class="mt-3 grid grid-cols-3 gap-2">
+                      <button
+                        class="h-9 rounded-md bg-red-400 text-xs font-bold text-black transition hover:bg-red-300"
+                        type="button"
+                        aria-label="Orient globe to X axis"
+                        (click)="orientToAxis('x')"
+                      >
+                        X
+                      </button>
+                      <button
+                        class="h-9 rounded-md bg-emerald-400 text-xs font-bold text-black transition hover:bg-emerald-300"
+                        type="button"
+                        aria-label="Orient globe to Y axis"
+                        (click)="orientToAxis('y')"
+                      >
+                        Y
+                      </button>
+                      <button
+                        class="h-9 rounded-md bg-sky-400 text-xs font-bold text-black transition hover:bg-sky-300"
+                        type="button"
+                        aria-label="Orient globe to Z axis"
+                        (click)="orientToAxis('z')"
+                      >
+                        Z
+                      </button>
+                    </div>
                   </div>
                 </div>
               }
@@ -343,7 +438,7 @@ export class SatelliteTrilaterationPage implements AfterViewInit, OnDestroy {
     beacon: THREE.PointLight;
   }> = [];
   protected drawerCollapsed = false;
-  protected activeDrawerTab: 'satellites' | 'receiver' = 'satellites';
+  protected activeDrawerTab: 'satellites' | 'receiver' | 'globe' = 'globe';
   protected autoRotate = true;
   protected axisGizmo: AxisGizmoItem[] = [
     this.createAxisGizmoItem('x', 'X', '#f87171'),
@@ -351,6 +446,7 @@ export class SatelliteTrilaterationPage implements AfterViewInit, OnDestroy {
     this.createAxisGizmoItem('z', 'Z', '#38bdf8'),
   ];
   protected satelliteCount = 4;
+  protected activeSatelliteIds = [1, 2, 3, 4];
   protected readonly satelliteCountLabels = [1, 2, 3, 4, 5, 6, 7, 8];
   protected readonly satelliteControls = [
     { id: 1, color: '#22d3ee', speed: 1, paused: false },
@@ -659,11 +755,11 @@ export class SatelliteTrilaterationPage implements AfterViewInit, OnDestroy {
   }
 
   protected get visibleSatelliteControls(): typeof this.satelliteControls {
-    return this.satelliteControls.slice(0, this.satelliteCount);
+    return this.satelliteControls.filter((satellite) => this.activeSatelliteIds.includes(satellite.id));
   }
 
   protected get selectedSatellite(): (typeof this.satelliteControls)[number] | null {
-    if (!this.selectedSatelliteId || this.selectedSatelliteId > this.satelliteCount) {
+    if (!this.selectedSatelliteId || !this.activeSatelliteIds.includes(this.selectedSatelliteId)) {
       return null;
     }
 
@@ -672,8 +768,9 @@ export class SatelliteTrilaterationPage implements AfterViewInit, OnDestroy {
 
   protected setSatelliteCount(count: number): void {
     this.satelliteCount = count;
+    this.activeSatelliteIds = this.satelliteControls.slice(0, count).map((satellite) => satellite.id);
 
-    if (this.selectedSatelliteId && this.selectedSatelliteId > count) {
+    if (this.selectedSatelliteId && !this.activeSatelliteIds.includes(this.selectedSatelliteId)) {
       this.selectedSatelliteId = null;
     }
 
@@ -681,9 +778,28 @@ export class SatelliteTrilaterationPage implements AfterViewInit, OnDestroy {
   }
 
   protected addSatellite(): void {
-    if (this.satelliteCount < this.satelliteControls.length) {
-      this.setSatelliteCount(this.satelliteCount + 1);
+    const satellite = this.satelliteControls.find(({ id }) => !this.activeSatelliteIds.includes(id));
+
+    if (satellite) {
+      this.activeSatelliteIds = [...this.activeSatelliteIds, satellite.id].sort((a, b) => a - b);
+      this.satelliteCount = this.activeSatelliteIds.length;
+      this.updateSatelliteVisibility();
     }
+  }
+
+  protected removeSatellite(id: number): void {
+    if (!this.activeSatelliteIds.includes(id)) {
+      return;
+    }
+
+    this.activeSatelliteIds = this.activeSatelliteIds.filter((satelliteId) => satelliteId !== id);
+    this.satelliteCount = this.activeSatelliteIds.length;
+
+    if (this.selectedSatelliteId === id) {
+      this.selectedSatelliteId = null;
+    }
+
+    this.updateSatelliteVisibility();
   }
 
   protected satelliteOrbitRadius(id: number): number {
@@ -1011,7 +1127,7 @@ export class SatelliteTrilaterationPage implements AfterViewInit, OnDestroy {
 
   private updateSatelliteVisibility(): void {
     this.satelliteSystems.forEach(({ root }, index) => {
-      const visible = index < this.satelliteCount;
+      const visible = this.activeSatelliteIds.includes(index + 1);
       root.visible = visible;
     });
   }
