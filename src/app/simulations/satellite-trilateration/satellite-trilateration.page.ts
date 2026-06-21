@@ -10,6 +10,7 @@ import {
 } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
 import * as THREE from 'three';
+import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 
 @Component({
   selector: 'app-satellite-trilateration-page',
@@ -31,6 +32,7 @@ export class SatelliteTrilaterationPage implements AfterViewInit, OnDestroy {
   private renderer?: THREE.WebGLRenderer;
   private scene?: THREE.Scene;
   private camera?: THREE.PerspectiveCamera;
+  private controls?: OrbitControls;
   private earth?: THREE.Mesh;
   private stars?: THREE.Points;
   private earthTexture?: THREE.Texture;
@@ -54,6 +56,7 @@ export class SatelliteTrilaterationPage implements AfterViewInit, OnDestroy {
 
     cancelAnimationFrame(this.animationFrame);
     window.removeEventListener('resize', this.resize);
+    this.controls?.dispose();
     this.renderer?.dispose();
     this.earth?.geometry.dispose();
     this.earthTexture?.dispose();
@@ -76,6 +79,18 @@ export class SatelliteTrilaterationPage implements AfterViewInit, OnDestroy {
     });
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     this.renderer.setSize(window.innerWidth, window.innerHeight, false);
+
+    this.controls = new OrbitControls(this.camera, canvas);
+    this.controls.enableDamping = true;
+    this.controls.dampingFactor = 0.06;
+    this.controls.enableZoom = true;
+    this.controls.zoomSpeed = 0.9;
+    this.controls.enablePan = false;
+    this.controls.autoRotate = true;
+    this.controls.autoRotateSpeed = 0.35;
+    this.controls.minDistance = 2.1;
+    this.controls.maxDistance = 7;
+    this.controls.rotateSpeed = 0.65;
 
     const earthGeometry = new THREE.SphereGeometry(1.35, 96, 96);
     const earthMaterial = new THREE.MeshStandardMaterial({
@@ -126,14 +141,11 @@ export class SatelliteTrilaterationPage implements AfterViewInit, OnDestroy {
       return;
     }
 
-    if (this.earth) {
-      this.earth.rotation.y += 0.0022;
-    }
-
     if (this.stars) {
       this.stars.rotation.y -= 0.0004;
     }
 
+    this.controls?.update();
     this.renderer.render(this.scene, this.camera);
     this.animationFrame = requestAnimationFrame(this.renderFrame);
   };
