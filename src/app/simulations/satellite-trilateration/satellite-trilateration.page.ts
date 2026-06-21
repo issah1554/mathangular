@@ -133,7 +133,7 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
               max="5"
               step="0.1"
               [value]="signalRadius"
-              (input)="signalRadius = inputValue($event)"
+              (input)="setSignalRadius(inputValue($event))"
             />
           </label>
 
@@ -177,6 +177,111 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
             {{ measurementNoise }} m noise, {{ receiverAltitude }} km altitude.
           </p>
         </div>
+
+        <div class="mt-6 border-t border-white/10 pt-5">
+          <nav class="flex items-center gap-2 text-sm font-semibold" aria-label="Satellite controls breadcrumb">
+            <button
+              class="text-cyan-300 transition hover:text-cyan-100"
+              type="button"
+              (click)="selectedSatelliteId = null"
+            >
+              Satellites
+            </button>
+            @if (selectedSatellite) {
+              <span class="text-white/35">&gt;</span>
+              <span class="text-white">Satellite {{ selectedSatellite.id }}</span>
+            }
+          </nav>
+
+          @if (!selectedSatellite) {
+            <div class="mt-3 space-y-2">
+              @for (satellite of visibleSatelliteControls; track satellite.id) {
+                <button
+                  class="flex w-full items-center justify-between rounded-md border border-white/10 bg-white/5 p-3 text-left transition hover:bg-white/10"
+                  type="button"
+                  [attr.aria-label]="'Open satellite ' + satellite.id + ' parameters'"
+                  (click)="selectedSatelliteId = satellite.id"
+                >
+                  <span class="flex items-center gap-2">
+                    <span
+                      class="size-3 rounded-full"
+                      [style.background-color]="satellite.color"
+                    ></span>
+                    <span class="text-sm font-semibold">Satellite {{ satellite.id }}</span>
+                  </span>
+                  <span class="text-xs font-semibold text-white/50">
+                    {{ satellite.paused ? 'Paused' : satellite.speed.toFixed(1) + 'x' }}
+                  </span>
+                </button>
+              }
+            </div>
+          } @else {
+            <article class="mt-3 rounded-md border border-white/10 bg-white/5 p-3">
+              <div class="flex items-center justify-between gap-3">
+                <div class="flex items-center gap-2">
+                  <span
+                    class="size-3 rounded-full"
+                    [style.background-color]="selectedSatellite.color"
+                  ></span>
+                  <p class="text-sm font-semibold">Satellite {{ selectedSatellite.id }}</p>
+                </div>
+                <button
+                  class="rounded-md border border-white/10 px-2 py-1 text-xs font-semibold transition hover:bg-white/10"
+                  type="button"
+                  [attr.aria-label]="selectedSatellite.paused ? 'Play satellite ' + selectedSatellite.id : 'Pause satellite ' + selectedSatellite.id"
+                  (click)="toggleSatellitePaused(selectedSatellite.id)"
+                >
+                  {{ selectedSatellite.paused ? 'Play' : 'Pause' }}
+                </button>
+              </div>
+
+              <dl class="mt-4 grid grid-cols-2 gap-3 text-xs">
+                <div class="rounded-md bg-black/25 p-2">
+                  <dt class="text-white/45">Orbit radius</dt>
+                  <dd class="mt-1 font-semibold">{{ satelliteOrbitRadius(selectedSatellite.id).toFixed(2) }} ER</dd>
+                </div>
+                <div class="rounded-md bg-black/25 p-2">
+                  <dt class="text-white/45">Signal radius</dt>
+                  <dd class="mt-1 font-semibold">{{ signalRadius }}x</dd>
+                </div>
+                <div class="rounded-md bg-black/25 p-2">
+                  <dt class="text-white/45">Status</dt>
+                  <dd class="mt-1 font-semibold">{{ selectedSatellite.paused ? 'Paused' : 'Moving' }}</dd>
+                </div>
+                <div class="rounded-md bg-black/25 p-2">
+                  <dt class="text-white/45">Speed</dt>
+                  <dd class="mt-1 font-semibold">{{ selectedSatellite.speed.toFixed(2) }}x</dd>
+                </div>
+              </dl>
+
+              <label class="mt-4 flex items-center justify-between gap-3 text-xs font-semibold text-white/70">
+                Color
+                <input
+                  class="h-7 w-12 cursor-pointer rounded border border-white/10 bg-transparent"
+                  type="color"
+                  [value]="selectedSatellite.color"
+                  (input)="setSatelliteColor(selectedSatellite.id, colorValue($event))"
+                />
+              </label>
+
+              <label class="mt-4 block">
+                <span class="flex items-center justify-between text-xs font-semibold text-white/70">
+                  Speed
+                  <span>{{ selectedSatellite.speed.toFixed(2) }}x</span>
+                </span>
+                <input
+                  class="mt-2 w-full accent-cyan-400"
+                  type="range"
+                  min="0.1"
+                  max="3"
+                  step="0.1"
+                  [value]="selectedSatellite.speed"
+                  (input)="setSatelliteSpeed(selectedSatellite.id, inputValue($event))"
+                />
+              </label>
+            </article>
+          }
+        </div>
         </aside>
       </div>
     </section>
@@ -202,15 +307,30 @@ export class SatelliteTrilaterationPage implements AfterViewInit, OnDestroy {
     satellitePivot: THREE.Object3D;
     body: THREE.Object3D;
     orbit: THREE.LineLoop;
-    speed: number;
+    signal: THREE.Mesh;
+    bodyMaterials: THREE.MeshStandardMaterial[];
+    orbitMaterial: THREE.LineBasicMaterial;
+    signalMaterial: THREE.MeshBasicMaterial;
+    beacon: THREE.PointLight;
   }> = [];
   protected drawerCollapsed = false;
   protected autoRotate = true;
   protected satelliteCount = 4;
   protected readonly satelliteCountLabels = [1, 2, 3, 4, 5, 6, 7, 8];
+  protected readonly satelliteControls = [
+    { id: 1, color: '#22d3ee', speed: 1, paused: false },
+    { id: 2, color: '#a78bfa', speed: 1.15, paused: false },
+    { id: 3, color: '#f59e0b', speed: 0.9, paused: false },
+    { id: 4, color: '#34d399', speed: 1.25, paused: false },
+    { id: 5, color: '#fb7185', speed: 0.8, paused: false },
+    { id: 6, color: '#60a5fa', speed: 1.4, paused: false },
+    { id: 7, color: '#f472b6', speed: 1.05, paused: false },
+    { id: 8, color: '#c084fc', speed: 1.3, paused: false },
+  ];
   protected signalRadius = 2.5;
   protected measurementNoise = 8;
   protected receiverAltitude = 0;
+  protected selectedSatelliteId: number | null = null;
 
   ngAfterViewInit(): void {
     if (!isPlatformBrowser(this.platformId)) {
@@ -238,9 +358,11 @@ export class SatelliteTrilaterationPage implements AfterViewInit, OnDestroy {
     this.disposeMaterial(this.earth?.material);
     this.stars?.geometry.dispose();
     this.disposeMaterial(this.stars?.material);
-    this.satelliteSystems.forEach(({ root, body, orbit }) => {
+    this.satelliteSystems.forEach(({ root, body, orbit, signal }) => {
       this.scene?.remove(root);
       this.disposeObject(body);
+      signal.geometry.dispose();
+      this.disposeMaterial(signal.material);
       orbit.geometry.dispose();
       this.disposeMaterial(orbit.material);
     });
@@ -334,8 +456,12 @@ export class SatelliteTrilaterationPage implements AfterViewInit, OnDestroy {
       this.stars.rotation.y -= 0.0004;
     }
 
-    this.satelliteSystems.forEach(({ satellitePivot, speed }) => {
-      satellitePivot.rotation.y += speed;
+    this.satelliteSystems.forEach(({ satellitePivot }, index) => {
+      const satellite = this.satelliteControls[index];
+
+      if (!satellite.paused) {
+        satellitePivot.rotation.y += 0.0038 * satellite.speed;
+      }
     });
 
     this.controls?.update();
@@ -387,13 +513,83 @@ export class SatelliteTrilaterationPage implements AfterViewInit, OnDestroy {
     return Number((event.target as HTMLInputElement).value);
   }
 
+  protected colorValue(event: Event): string {
+    return (event.target as HTMLInputElement).value;
+  }
+
   protected get satelliteProgress(): number {
     return ((this.satelliteCount - 1) / (this.satelliteCountLabels.length - 1)) * 87.5;
   }
 
+  protected get visibleSatelliteControls(): typeof this.satelliteControls {
+    return this.satelliteControls.slice(0, this.satelliteCount);
+  }
+
+  protected get selectedSatellite(): (typeof this.satelliteControls)[number] | null {
+    if (!this.selectedSatelliteId || this.selectedSatelliteId > this.satelliteCount) {
+      return null;
+    }
+
+    return this.satelliteControls[this.selectedSatelliteId - 1] ?? null;
+  }
+
   protected setSatelliteCount(count: number): void {
     this.satelliteCount = count;
+
+    if (this.selectedSatelliteId && this.selectedSatelliteId > count) {
+      this.selectedSatelliteId = null;
+    }
+
     this.updateSatelliteVisibility();
+  }
+
+  protected satelliteOrbitRadius(id: number): number {
+    return 2.35 + ((id - 1) % 3) * 0.18;
+  }
+
+  protected setSignalRadius(radius: number): void {
+    this.signalRadius = radius;
+    this.updateSignalRadius();
+  }
+
+  protected setSatelliteSpeed(id: number, speed: number): void {
+    const satellite = this.satelliteControls[id - 1];
+
+    if (satellite) {
+      satellite.speed = speed;
+    }
+  }
+
+  protected toggleSatellitePaused(id: number): void {
+    const satellite = this.satelliteControls[id - 1];
+
+    if (satellite) {
+      satellite.paused = !satellite.paused;
+    }
+  }
+
+  protected setSatelliteColor(id: number, color: string): void {
+    const satellite = this.satelliteControls[id - 1];
+    const system = this.satelliteSystems[id - 1];
+
+    if (!satellite) {
+      return;
+    }
+
+    satellite.color = color;
+
+    if (!system) {
+      return;
+    }
+
+    const threeColor = new THREE.Color(color);
+    system.bodyMaterials.forEach((material) => {
+      material.color.copy(threeColor);
+      material.emissive.copy(threeColor).multiplyScalar(0.3);
+    });
+    system.orbitMaterial.color.copy(threeColor);
+    system.signalMaterial.color.copy(threeColor);
+    system.beacon.color.copy(threeColor);
   }
 
   private moveCameraBy(multiplier: number): void {
@@ -447,7 +643,11 @@ export class SatelliteTrilaterationPage implements AfterViewInit, OnDestroy {
     satellitePivot: THREE.Object3D;
     body: THREE.Object3D;
     orbit: THREE.LineLoop;
-    speed: number;
+    signal: THREE.Mesh;
+    bodyMaterials: THREE.MeshStandardMaterial[];
+    orbitMaterial: THREE.LineBasicMaterial;
+    signalMaterial: THREE.MeshBasicMaterial;
+    beacon: THREE.PointLight;
   }> {
     if (!this.scene) {
       return [];
@@ -457,7 +657,8 @@ export class SatelliteTrilaterationPage implements AfterViewInit, OnDestroy {
       const radius = 2.35 + (index % 3) * 0.18;
       const inclination = THREE.MathUtils.degToRad(18 + index * 17);
       const phase = (index / 8) * Math.PI * 2;
-      const speed = 0.0038 + index * 0.00035;
+      const satelliteConfig = this.satelliteControls[index];
+      const color = new THREE.Color(satelliteConfig.color);
 
       const root = new THREE.Object3D();
       root.rotation.z = inclination;
@@ -466,47 +667,61 @@ export class SatelliteTrilaterationPage implements AfterViewInit, OnDestroy {
       const satellitePivot = new THREE.Object3D();
       satellitePivot.rotation.y = phase;
 
-      const satellite = this.createSatelliteBody();
+      const satellite = this.createSatelliteBody(color);
       satellite.position.set(radius, 0, 0);
       satellite.scale.setScalar(0.85);
       satellitePivot.add(satellite);
 
-      const orbit = this.createOrbitPath(radius);
+      const signal = this.createSignalSphere(color);
+      signal.position.set(radius, 0, 0);
+      signal.scale.setScalar(this.signalRadius);
+      satellitePivot.add(signal);
+
+      const orbit = this.createOrbitPath(radius, color);
 
       root.add(orbit);
       root.add(satellitePivot);
       this.scene?.add(root);
+
+      const bodyMaterials = this.collectSatelliteMaterials(satellite);
+      const beacon = satellite.children.find((child) => child instanceof THREE.PointLight) as THREE.PointLight;
 
       return {
         root,
         satellitePivot,
         body: satellite,
         orbit,
-        speed,
+        signal,
+        bodyMaterials,
+        orbitMaterial: orbit.material as THREE.LineBasicMaterial,
+        signalMaterial: signal.material as THREE.MeshBasicMaterial,
+        beacon,
       };
     });
 
     return systems;
   }
 
-  private createSatelliteBody(): THREE.Object3D {
+  private createSatelliteBody(color: THREE.Color): THREE.Object3D {
     const satellite = new THREE.Group();
+
+    const busMaterial = new THREE.MeshStandardMaterial({
+      color,
+      emissive: color.clone().multiplyScalar(0.3),
+      emissiveIntensity: 0.25,
+      metalness: 0.45,
+      roughness: 0.35,
+    });
 
     const bus = new THREE.Mesh(
       new THREE.BoxGeometry(0.09, 0.06, 0.06),
-      new THREE.MeshStandardMaterial({
-        color: 0xd8dde8,
-        emissive: 0x1e293b,
-        emissiveIntensity: 0.25,
-        metalness: 0.45,
-        roughness: 0.35,
-      }),
+      busMaterial,
     );
     satellite.add(bus);
 
     const panelMaterial = new THREE.MeshStandardMaterial({
-      color: 0x2dd4bf,
-      emissive: 0x0f766e,
+      color,
+      emissive: color.clone().multiplyScalar(0.35),
       emissiveIntensity: 0.35,
       metalness: 0.25,
       roughness: 0.5,
@@ -520,14 +735,27 @@ export class SatelliteTrilaterationPage implements AfterViewInit, OnDestroy {
     rightPanel.position.x = 0.13;
     satellite.add(rightPanel);
 
-    const beacon = new THREE.PointLight(0x67e8f9, 0.7, 1.4);
+    const beacon = new THREE.PointLight(color, 0.7, 1.4);
     beacon.position.set(0, 0, 0.06);
     satellite.add(beacon);
 
     return satellite;
   }
 
-  private createOrbitPath(radius: number): THREE.LineLoop {
+  private createSignalSphere(color: THREE.Color): THREE.Mesh {
+    return new THREE.Mesh(
+      new THREE.SphereGeometry(0.28, 32, 16),
+      new THREE.MeshBasicMaterial({
+        color,
+        transparent: true,
+        opacity: 0.1,
+        wireframe: true,
+        depthWrite: false,
+      }),
+    );
+  }
+
+  private createOrbitPath(radius: number, color: THREE.Color): THREE.LineLoop {
     const segments = 192;
     const points: THREE.Vector3[] = [];
 
@@ -539,7 +767,7 @@ export class SatelliteTrilaterationPage implements AfterViewInit, OnDestroy {
     return new THREE.LineLoop(
       new THREE.BufferGeometry().setFromPoints(points),
       new THREE.LineBasicMaterial({
-        color: 0x67e8f9,
+        color,
         transparent: true,
         opacity: 0.22,
       }),
@@ -551,6 +779,26 @@ export class SatelliteTrilaterationPage implements AfterViewInit, OnDestroy {
       const visible = index < this.satelliteCount;
       root.visible = visible;
     });
+  }
+
+  private updateSignalRadius(): void {
+    this.satelliteSystems.forEach(({ signal }) => {
+      signal.scale.setScalar(this.signalRadius);
+    });
+  }
+
+  private collectSatelliteMaterials(object: THREE.Object3D): THREE.MeshStandardMaterial[] {
+    const materials: THREE.MeshStandardMaterial[] = [];
+
+    object.traverse((child) => {
+      const mesh = child as THREE.Mesh;
+
+      if (mesh.material instanceof THREE.MeshStandardMaterial) {
+        materials.push(mesh.material);
+      }
+    });
+
+    return materials;
   }
 
   private disposeObject(object: THREE.Object3D): void {
