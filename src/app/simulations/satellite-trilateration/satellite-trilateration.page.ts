@@ -2,24 +2,64 @@ import {
   AfterViewInit,
   Component,
   ElementRef,
+  HostListener,
   NgZone,
   OnDestroy,
   PLATFORM_ID,
   ViewChild,
   inject,
 } from '@angular/core';
-import { isPlatformBrowser } from '@angular/common';
+import { NgStyle, isPlatformBrowser } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 
+type SceneAxis = 'x' | 'y' | 'z';
+type AxisGizmoItem = {
+  axis: SceneAxis;
+  label: string;
+  color: string;
+  lineStyle: Record<string, string | number>;
+  labelStyle: Record<string, string | number>;
+};
+
 @Component({
   selector: 'app-satellite-trilateration-page',
-  imports: [RouterLink],
+  imports: [RouterLink, NgStyle],
   template: `
     <section class="fixed inset-0 overflow-hidden bg-black">
       <h1 class="sr-only">Satellite Trilateration Earth Globe</h1>
       <canvas #globeCanvas class="absolute inset-0 h-full w-full"></canvas>
+
+      <div
+        class="absolute left-4 top-4 z-10 size-28 cursor-grab touch-none text-white active:cursor-grabbing"
+        (pointerdown)="startAxisGizmoDrag($event)"
+      >
+        <button
+          class="absolute left-1/2 top-1/2 grid size-6 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full border border-white/20 bg-black/35 text-[10px] font-semibold backdrop-blur transition hover:bg-white/15"
+          type="button"
+          aria-label="Reset orientation"
+          (click)="handleAxisGizmoReset($event)"
+        >
+          O
+        </button>
+
+        @for (item of axisGizmo; track item.axis) {
+          <span
+            class="absolute left-1/2 top-1/2 h-0.5 origin-left rounded-full"
+            [ngStyle]="item.lineStyle"
+          ></span>
+          <button
+            class="absolute grid size-6 place-items-center rounded-full text-xs font-bold text-black shadow transition hover:scale-110"
+            type="button"
+            [attr.aria-label]="'Orient scene to ' + item.label + ' axis'"
+            [ngStyle]="item.labelStyle"
+            (click)="handleAxisGizmoClick($event, item.axis)"
+          >
+            {{ item.label }}
+          </button>
+        }
+      </div>
 
       <div class="absolute bottom-4 left-4 z-10 flex items-center gap-2 rounded-md border border-white/15 bg-black/45 p-2 text-white backdrop-blur">
         <a
@@ -282,6 +322,15 @@ export class SatelliteTrilaterationPage implements AfterViewInit, OnDestroy {
   private earth?: THREE.Mesh;
   private stars?: THREE.Points;
   private earthTexture?: THREE.Texture;
+  private axisGizmoDrag:
+    | {
+        pointerId: number;
+        lastX: number;
+        lastY: number;
+        moved: boolean;
+      }
+    | null = null;
+  private axisGizmoClickSuppressed = false;
   private satelliteSystems: Array<{
     root: THREE.Object3D;
     satellitePivot: THREE.Object3D;
@@ -296,6 +345,11 @@ export class SatelliteTrilaterationPage implements AfterViewInit, OnDestroy {
   protected drawerCollapsed = false;
   protected activeDrawerTab: 'satellites' | 'receiver' = 'satellites';
   protected autoRotate = true;
+  protected axisGizmo: AxisGizmoItem[] = [
+    this.createAxisGizmoItem('x', 'X', '#f87171'),
+    this.createAxisGizmoItem('y', 'Y', '#34d399'),
+    this.createAxisGizmoItem('z', 'Z', '#38bdf8'),
+  ];
   protected satelliteCount = 4;
   protected readonly satelliteCountLabels = [1, 2, 3, 4, 5, 6, 7, 8];
   protected readonly satelliteControls = [
@@ -446,6 +500,9 @@ export class SatelliteTrilaterationPage implements AfterViewInit, OnDestroy {
     });
 
     this.controls?.update();
+    this.ngZone.run(() => {
+      this.updateAxisGizmo();
+    });
     this.renderer.render(this.scene, this.camera);
     this.animationFrame = requestAnimationFrame(this.renderFrame);
   };
@@ -477,8 +534,41 @@ export class SatelliteTrilaterationPage implements AfterViewInit, OnDestroy {
       return;
     }
 
+    this.camera.up.set(0, 1, 0);
     this.camera.position.set(0, 0, 4.6);
     this.controls.target.set(0, 0, 0);
+    this.controls.update();
+  }
+
+  protected orientToAxis(axis: SceneAxis): void {
+    if (!this.camera || !this.controls) {
+      return;
+    }
+
+    const distance = THREE.MathUtils.clamp(
+      this.camera.position.distanceTo(this.controls.target),
+      this.controls.minDistance,
+      this.controls.maxDistance,
+    );
+
+    const target = this.controls.target;
+
+    if (axis === 'x') {
+      this.camera.up.set(0, 1, 0);
+      this.camera.position.set(target.x + distance, target.y, target.z);
+    }
+
+    if (axis === 'y') {
+      this.camera.up.set(0, 0, 1);
+      this.camera.position.set(target.x, target.y + distance, target.z);
+    }
+
+    if (axis === 'z') {
+      this.camera.up.set(0, 1, 0);
+      this.camera.position.set(target.x, target.y, target.z + distance);
+    }
+
+    this.camera.lookAt(target);
     this.controls.update();
   }
 
@@ -488,6 +578,72 @@ export class SatelliteTrilaterationPage implements AfterViewInit, OnDestroy {
     if (this.controls) {
       this.controls.autoRotate = this.autoRotate;
     }
+  }
+
+  protected startAxisGizmoDrag(event: PointerEvent): void {
+    if (event.button !== 0) {
+      return;
+    }
+
+    event.preventDefault();
+    this.axisGizmoDrag = {
+      pointerId: event.pointerId,
+      lastX: event.clientX,
+      lastY: event.clientY,
+      moved: false,
+    };
+  }
+
+  protected handleAxisGizmoClick(event: MouseEvent, axis: SceneAxis): void {
+    if (this.axisGizmoClickSuppressed) {
+      this.axisGizmoClickSuppressed = false;
+      event.preventDefault();
+      event.stopPropagation();
+      return;
+    }
+
+    this.orientToAxis(axis);
+  }
+
+  protected handleAxisGizmoReset(event: MouseEvent): void {
+    if (this.axisGizmoClickSuppressed) {
+      this.axisGizmoClickSuppressed = false;
+      event.preventDefault();
+      event.stopPropagation();
+      return;
+    }
+
+    this.resetView();
+  }
+
+  @HostListener('window:pointermove', ['$event'])
+  protected dragAxisGizmo(event: PointerEvent): void {
+    if (!this.axisGizmoDrag || event.pointerId !== this.axisGizmoDrag.pointerId) {
+      return;
+    }
+
+    const movementX = event.clientX - this.axisGizmoDrag.lastX;
+    const movementY = event.clientY - this.axisGizmoDrag.lastY;
+
+    this.axisGizmoDrag.lastX = event.clientX;
+    this.axisGizmoDrag.lastY = event.clientY;
+
+    if (Math.abs(movementX) + Math.abs(movementY) > 2) {
+      this.axisGizmoDrag.moved = true;
+    }
+
+    this.orbitCameraFromDrag(movementX, movementY);
+  }
+
+  @HostListener('window:pointerup', ['$event'])
+  @HostListener('window:pointercancel', ['$event'])
+  protected stopAxisGizmoDrag(event: PointerEvent): void {
+    if (!this.axisGizmoDrag || event.pointerId !== this.axisGizmoDrag.pointerId) {
+      return;
+    }
+
+    this.axisGizmoClickSuppressed = this.axisGizmoDrag.moved;
+    this.axisGizmoDrag = null;
   }
 
   protected inputValue(event: Event): number {
@@ -577,6 +733,98 @@ export class SatelliteTrilaterationPage implements AfterViewInit, OnDestroy {
     system.orbitMaterial.color.copy(threeColor);
     system.signalMaterial.color.copy(threeColor);
     system.beacon.color.copy(threeColor);
+  }
+
+  private createAxisGizmoItem(axis: SceneAxis, label: string, color: string): AxisGizmoItem {
+    return {
+      axis,
+      label,
+      color,
+      lineStyle: {
+        width: '38px',
+        'background-color': color,
+        transform: 'rotate(0deg)',
+        opacity: 1,
+        'z-index': 1,
+      },
+      labelStyle: {
+        left: '56px',
+        top: '56px',
+        transform: 'translate(-50%, -50%)',
+        'background-color': color,
+        opacity: 1,
+        'z-index': 2,
+      },
+    };
+  }
+
+  private updateAxisGizmo(): void {
+    if (!this.camera) {
+      return;
+    }
+
+    const inverseCameraRotation = this.camera.quaternion.clone().invert();
+    const axisVectors: Record<SceneAxis, THREE.Vector3> = {
+      x: new THREE.Vector3(1, 0, 0),
+      y: new THREE.Vector3(0, 1, 0),
+      z: new THREE.Vector3(0, 0, 1),
+    };
+
+    this.axisGizmo = this.axisGizmo.map((item) => {
+      const direction = axisVectors[item.axis].clone().applyQuaternion(inverseCameraRotation).normalize();
+      const x = direction.x;
+      const y = -direction.y;
+      const angle = Math.atan2(y, x) * THREE.MathUtils.RAD2DEG;
+      const depth = THREE.MathUtils.clamp((direction.z + 1) / 2, 0, 1);
+      const length = 28 + (1 - depth) * 14;
+      const labelX = 56 + x * length;
+      const labelY = 56 + y * length;
+      const opacity = 0.45 + (1 - depth) * 0.55;
+      const zIndex = Math.round((1 - depth) * 10) + 1;
+
+      return {
+        ...item,
+        lineStyle: {
+          width: `${length}px`,
+          'background-color': item.color,
+          transform: `rotate(${angle}deg)`,
+          opacity,
+          'z-index': zIndex,
+        },
+        labelStyle: {
+          left: `${labelX}px`,
+          top: `${labelY}px`,
+          transform: 'translate(-50%, -50%)',
+          'background-color': item.color,
+          opacity,
+          'z-index': zIndex + 1,
+        },
+      };
+    });
+  }
+
+  private orbitCameraFromDrag(movementX: number, movementY: number): void {
+    if (!this.camera || !this.controls) {
+      return;
+    }
+
+    const target = this.controls.target;
+    const offset = this.camera.position.clone().sub(target);
+    const spherical = new THREE.Spherical().setFromVector3(offset);
+
+    this.camera.up.set(0, 1, 0);
+    spherical.theta -= movementX * 0.015;
+    spherical.phi = THREE.MathUtils.clamp(
+      spherical.phi - movementY * 0.015,
+      0.08,
+      Math.PI - 0.08,
+    );
+
+    offset.setFromSpherical(spherical);
+    this.camera.position.copy(target).add(offset);
+    this.camera.lookAt(target);
+    this.controls.update();
+    this.updateAxisGizmo();
   }
 
   private moveCameraBy(multiplier: number): void {
