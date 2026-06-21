@@ -76,125 +76,116 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
           {{ drawerCollapsed ? '<' : '>' }}
         </button>
 
-        <aside class="h-full overflow-y-auto border-l border-white/15 bg-black/60 p-5 text-white shadow-2xl backdrop-blur-md">
-          <div>
-            <p class="text-xs font-semibold uppercase tracking-wide text-white/60">Simulation</p>
-            <h2 class="mt-1 text-lg font-semibold">Parameters</h2>
-          </div>
-
-        <div class="mt-5 space-y-5">
-          <label class="block">
-            <span class="flex items-center justify-between text-sm font-medium">
-              Satellites
-              <span class="text-white/60">{{ satelliteCount }}</span>
-            </span>
-            <div class="relative mt-4 pb-6">
-              <div class="absolute left-[6.25%] right-[6.25%] top-2 h-0.5 bg-white/25"></div>
-              <div
-                class="absolute left-[6.25%] top-2 h-0.5 bg-cyan-400"
-                [style.width.%]="satelliteProgress"
-              ></div>
-
-              <div class="relative grid grid-cols-8">
-                @for (value of satelliteCountLabels; track value) {
-                  <button
-                    class="group flex flex-col items-center gap-2"
-                    type="button"
-                    [attr.aria-label]="'Set satellites to ' + value"
-                    (click)="setSatelliteCount(value)"
-                  >
-                    <span
-                      class="grid size-4 place-items-center rounded-full border transition"
-                      [style.border-color]="value <= satelliteCount ? 'rgb(103 232 249)' : 'rgb(255 255 255 / 0.3)'"
-                      [style.background-color]="value <= satelliteCount ? 'rgb(34 211 238)' : 'rgb(255 255 255 / 0.35)'"
-                      [class.scale-150]="value === satelliteCount"
-                    ></span>
-                    <span
-                      class="text-[11px] font-semibold transition"
-                      [style.color]="value === satelliteCount ? 'rgb(103 232 249)' : 'rgb(255 255 255 / 0.45)'"
-                    >
-                      {{ value }}
-                    </span>
-                  </button>
-                }
-              </div>
-            </div>
-          </label>
-
-          <label class="block">
-            <span class="flex items-center justify-between text-sm font-medium">
-              Signal radius
-              <span class="text-white/60">{{ signalRadius }}x</span>
-            </span>
-            <input
-              class="mt-2 w-full accent-cyan-400"
-              type="range"
-              min="1"
-              max="5"
-              step="0.1"
-              [value]="signalRadius"
-              (input)="setSignalRadius(inputValue($event))"
-            />
-          </label>
-
-          <label class="block">
-            <span class="flex items-center justify-between text-sm font-medium">
-              Measurement noise
-              <span class="text-white/60">{{ measurementNoise }} m</span>
-            </span>
-            <input
-              class="mt-2 w-full accent-cyan-400"
-              type="range"
-              min="0"
-              max="50"
-              step="1"
-              [value]="measurementNoise"
-              (input)="measurementNoise = inputValue($event)"
-            />
-          </label>
-
-          <label class="block">
-            <span class="flex items-center justify-between text-sm font-medium">
-              Receiver altitude
-              <span class="text-white/60">{{ receiverAltitude }} km</span>
-            </span>
-            <input
-              class="mt-2 w-full accent-cyan-400"
-              type="range"
-              min="0"
-              max="500"
-              step="10"
-              [value]="receiverAltitude"
-              (input)="receiverAltitude = inputValue($event)"
-            />
-          </label>
-        </div>
-
-        <div class="mt-6 rounded-md border border-white/10 bg-white/5 p-3">
-          <p class="text-sm font-semibold">Current setup</p>
-          <p class="mt-2 text-sm leading-6 text-white/70">
-            {{ satelliteCount }} satellites, {{ signalRadius }}x signal radius,
-            {{ measurementNoise }} m noise, {{ receiverAltitude }} km altitude.
-          </p>
-        </div>
-
-        <div class="mt-6 border-t border-white/10 pt-5">
-          <nav class="flex items-center gap-2 text-sm font-semibold" aria-label="Satellite controls breadcrumb">
-            <button
-              class="text-cyan-300 transition hover:text-cyan-100"
-              type="button"
-              (click)="selectedSatelliteId = null"
-            >
-              Satellites
-            </button>
-            @if (selectedSatellite) {
-              <span class="text-white/35">&gt;</span>
-              <span class="text-white">Satellite {{ selectedSatellite.id }}</span>
-            }
-          </nav>
-
+        <aside class="h-full overflow-y-auto border-l border-white/15 bg-black/60 text-white shadow-2xl backdrop-blur-md">
           @if (!selectedSatellite) {
-            <div class="mt-3 space-y-2">
+            <div class="p-5">
+              <div>
+                <p class="text-xs font-semibold uppercase tracking-wide text-white/60">Simulation</p>
+                <h2 class="mt-1 text-lg font-semibold">Parameters</h2>
+              </div>
+
+              <div class="mt-5 space-y-5">
+                <label class="block">
+                  <span class="flex items-center justify-between text-sm font-medium">
+                    Satellites
+                    <span class="text-white/60">{{ satelliteCount }}</span>
+                  </span>
+                  <div class="relative mt-4 pb-6">
+                    <div class="absolute left-[6.25%] right-[6.25%] top-2 h-0.5 bg-white/25"></div>
+                    <div
+                      class="absolute left-[6.25%] top-2 h-0.5 bg-cyan-400"
+                      [style.width.%]="satelliteProgress"
+                    ></div>
+
+                    <div class="relative grid grid-cols-8">
+                      @for (value of satelliteCountLabels; track value) {
+                        <button
+                          class="group flex flex-col items-center gap-2"
+                          type="button"
+                          [attr.aria-label]="'Set satellites to ' + value"
+                          (click)="setSatelliteCount(value)"
+                        >
+                          <span
+                            class="grid size-4 place-items-center rounded-full border transition"
+                            [style.border-color]="value <= satelliteCount ? 'rgb(103 232 249)' : 'rgb(255 255 255 / 0.3)'"
+                            [style.background-color]="value <= satelliteCount ? 'rgb(34 211 238)' : 'rgb(255 255 255 / 0.35)'"
+                            [class.scale-150]="value === satelliteCount"
+                          ></span>
+                          <span
+                            class="text-[11px] font-semibold transition"
+                            [style.color]="value === satelliteCount ? 'rgb(103 232 249)' : 'rgb(255 255 255 / 0.45)'"
+                          >
+                            {{ value }}
+                          </span>
+                        </button>
+                      }
+                    </div>
+                  </div>
+                </label>
+
+                <label class="block">
+                  <span class="flex items-center justify-between text-sm font-medium">
+                    Signal radius
+                    <span class="text-white/60">{{ signalRadius }}x</span>
+                  </span>
+                  <input
+                    class="mt-2 w-full accent-cyan-400"
+                    type="range"
+                    min="1"
+                    max="5"
+                    step="0.1"
+                    [value]="signalRadius"
+                    (input)="setSignalRadius(inputValue($event))"
+                  />
+                </label>
+
+                <label class="block">
+                  <span class="flex items-center justify-between text-sm font-medium">
+                    Measurement noise
+                    <span class="text-white/60">{{ measurementNoise }} m</span>
+                  </span>
+                  <input
+                    class="mt-2 w-full accent-cyan-400"
+                    type="range"
+                    min="0"
+                    max="50"
+                    step="1"
+                    [value]="measurementNoise"
+                    (input)="measurementNoise = inputValue($event)"
+                  />
+                </label>
+
+                <label class="block">
+                  <span class="flex items-center justify-between text-sm font-medium">
+                    Receiver altitude
+                    <span class="text-white/60">{{ receiverAltitude }} km</span>
+                  </span>
+                  <input
+                    class="mt-2 w-full accent-cyan-400"
+                    type="range"
+                    min="0"
+                    max="500"
+                    step="10"
+                    [value]="receiverAltitude"
+                    (input)="receiverAltitude = inputValue($event)"
+                  />
+                </label>
+              </div>
+
+              <div class="mt-6 rounded-md border border-white/10 bg-white/5 p-3">
+                <p class="text-sm font-semibold">Current setup</p>
+                <p class="mt-2 text-sm leading-6 text-white/70">
+                  {{ satelliteCount }} satellites, {{ signalRadius }}x signal radius,
+                  {{ measurementNoise }} m noise, {{ receiverAltitude }} km altitude.
+                </p>
+              </div>
+
+              <div class="mt-6 border-t border-white/10 pt-5">
+                <nav class="text-sm font-semibold" aria-label="Satellite controls breadcrumb">
+                  <span class="text-white">Satellites</span>
+                </nav>
+
+                <div class="mt-3 space-y-2">
               @for (satellite of visibleSatelliteControls; track satellite.id) {
                 <button
                   class="flex w-full items-center justify-between rounded-md border border-white/10 bg-white/5 p-3 text-left transition hover:bg-white/10"
@@ -214,17 +205,38 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
                   </span>
                 </button>
               }
+                </div>
+              </div>
             </div>
           } @else {
-            <article class="mt-3 rounded-md border border-white/10 bg-white/5 p-3">
-              <div class="flex items-center justify-between gap-3">
-                <div class="flex items-center gap-2">
-                  <span
-                    class="size-3 rounded-full"
-                    [style.background-color]="selectedSatellite.color"
-                  ></span>
-                  <p class="text-sm font-semibold">Satellite {{ selectedSatellite.id }}</p>
+            <div class="flex min-h-full flex-col">
+              <div class="border-b border-white/10 p-5">
+                <nav class="flex items-center gap-2 text-sm font-semibold" aria-label="Satellite controls breadcrumb">
+                  <button
+                    class="text-cyan-300 transition hover:text-cyan-100"
+                    type="button"
+                    (click)="selectedSatelliteId = null"
+                  >
+                    Satellites
+                  </button>
+                  <span class="text-white/35">&gt;</span>
+                  <span class="text-white">Satellite {{ selectedSatellite.id }}</span>
+                </nav>
+                <div class="mt-4 flex items-center gap-3">
+                  <span class="size-4 rounded-full" [style.background-color]="selectedSatellite.color"></span>
+                  <div>
+                    <p class="text-xs font-semibold uppercase tracking-wide text-white/50">Selected satellite</p>
+                    <h2 class="text-xl font-semibold">Satellite {{ selectedSatellite.id }}</h2>
+                  </div>
                 </div>
+              </div>
+
+              <div class="flex-1 space-y-5 p-5">
+                <div class="flex items-center justify-between rounded-md border border-white/10 bg-white/5 p-3">
+                  <div>
+                    <p class="text-xs font-semibold uppercase tracking-wide text-white/45">Motion</p>
+                    <p class="mt-1 text-sm font-semibold">{{ selectedSatellite.paused ? 'Paused' : 'Moving' }}</p>
+                  </div>
                 <button
                   class="rounded-md border border-white/10 px-2 py-1 text-xs font-semibold transition hover:bg-white/10"
                   type="button"
@@ -233,9 +245,9 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
                 >
                   {{ selectedSatellite.paused ? 'Play' : 'Pause' }}
                 </button>
-              </div>
+                </div>
 
-              <dl class="mt-4 grid grid-cols-2 gap-3 text-xs">
+              <dl class="grid grid-cols-2 gap-3 text-xs">
                 <div class="rounded-md bg-black/25 p-2">
                   <dt class="text-white/45">Orbit radius</dt>
                   <dd class="mt-1 font-semibold">{{ satelliteOrbitRadius(selectedSatellite.id).toFixed(2) }} ER</dd>
@@ -254,7 +266,7 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
                 </div>
               </dl>
 
-              <label class="mt-4 flex items-center justify-between gap-3 text-xs font-semibold text-white/70">
+              <label class="flex items-center justify-between gap-3 rounded-md border border-white/10 bg-white/5 p-3 text-xs font-semibold text-white/70">
                 Color
                 <input
                   class="h-7 w-12 cursor-pointer rounded border border-white/10 bg-transparent"
@@ -264,7 +276,7 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
                 />
               </label>
 
-              <label class="mt-4 block">
+              <label class="block rounded-md border border-white/10 bg-white/5 p-3">
                 <span class="flex items-center justify-between text-xs font-semibold text-white/70">
                   Speed
                   <span>{{ selectedSatellite.speed.toFixed(2) }}x</span>
@@ -279,9 +291,9 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
                   (input)="setSatelliteSpeed(selectedSatellite.id, inputValue($event))"
                 />
               </label>
-            </article>
+              </div>
+            </div>
           }
-        </div>
         </aside>
       </div>
     </section>
