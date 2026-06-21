@@ -33,6 +33,7 @@ export class SatelliteTrilaterationPage implements AfterViewInit, OnDestroy {
   private camera?: THREE.PerspectiveCamera;
   private earth?: THREE.Mesh;
   private stars?: THREE.Points;
+  private earthTexture?: THREE.Texture;
 
   ngAfterViewInit(): void {
     if (!isPlatformBrowser(this.platformId)) {
@@ -55,6 +56,7 @@ export class SatelliteTrilaterationPage implements AfterViewInit, OnDestroy {
     window.removeEventListener('resize', this.resize);
     this.renderer?.dispose();
     this.earth?.geometry.dispose();
+    this.earthTexture?.dispose();
     this.disposeMaterial(this.earth?.material);
     this.stars?.geometry.dispose();
     this.disposeMaterial(this.stars?.material);
@@ -75,12 +77,9 @@ export class SatelliteTrilaterationPage implements AfterViewInit, OnDestroy {
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     this.renderer.setSize(window.innerWidth, window.innerHeight, false);
 
-    const earthTexture = new THREE.CanvasTexture(this.createEarthTexture());
-    earthTexture.colorSpace = THREE.SRGBColorSpace;
-
     const earthGeometry = new THREE.SphereGeometry(1.35, 96, 96);
     const earthMaterial = new THREE.MeshStandardMaterial({
-      map: earthTexture,
+      color: 0xffffff,
       roughness: 0.9,
       metalness: 0,
     });
@@ -88,6 +87,14 @@ export class SatelliteTrilaterationPage implements AfterViewInit, OnDestroy {
     this.earth = new THREE.Mesh(earthGeometry, earthMaterial);
     this.earth.rotation.set(0.18, -0.55, 0);
     this.scene.add(this.earth);
+
+    new THREE.TextureLoader().load('/textures/earth-blue-marble-2048.jpg', (texture) => {
+      texture.colorSpace = THREE.SRGBColorSpace;
+      texture.anisotropy = this.renderer?.capabilities.getMaxAnisotropy() ?? 1;
+      this.earthTexture = texture;
+      earthMaterial.map = texture;
+      earthMaterial.needsUpdate = true;
+    });
 
     const atmosphere = new THREE.Mesh(
       new THREE.SphereGeometry(1.39, 96, 96),
@@ -168,106 +175,6 @@ export class SatelliteTrilaterationPage implements AfterViewInit, OnDestroy {
         opacity: 0.78,
       }),
     );
-  }
-
-  private createEarthTexture(): HTMLCanvasElement {
-    const canvas = document.createElement('canvas');
-    canvas.width = 2048;
-    canvas.height = 1024;
-
-    const context = canvas.getContext('2d');
-    if (!context) {
-      return canvas;
-    }
-
-    const ocean = context.createLinearGradient(0, 0, 0, canvas.height);
-    ocean.addColorStop(0, '#123f7a');
-    ocean.addColorStop(0.5, '#0b67a3');
-    ocean.addColorStop(1, '#06204c');
-    context.fillStyle = ocean;
-    context.fillRect(0, 0, canvas.width, canvas.height);
-
-    context.fillStyle = '#2e8b57';
-    this.drawContinent(context, [
-      [300, 250],
-      [430, 180],
-      [560, 230],
-      [615, 360],
-      [520, 470],
-      [405, 430],
-      [315, 510],
-      [230, 410],
-    ]);
-    this.drawContinent(context, [
-      [560, 520],
-      [665, 610],
-      [620, 810],
-      [515, 900],
-      [465, 710],
-    ]);
-    this.drawContinent(context, [
-      [900, 250],
-      [1100, 185],
-      [1290, 285],
-      [1210, 440],
-      [1030, 455],
-      [850, 380],
-    ]);
-    this.drawContinent(context, [
-      [1180, 455],
-      [1330, 515],
-      [1390, 690],
-      [1255, 825],
-      [1110, 690],
-    ]);
-    this.drawContinent(context, [
-      [1420, 275],
-      [1660, 200],
-      [1865, 355],
-      [1745, 560],
-      [1520, 530],
-      [1365, 410],
-    ]);
-    this.drawContinent(context, [
-      [1600, 720],
-      [1760, 690],
-      [1870, 790],
-      [1810, 880],
-      [1650, 865],
-    ]);
-
-    context.globalAlpha = 0.34;
-    context.fillStyle = '#ffffff';
-    for (let index = 0; index < 48; index++) {
-      const x = Math.random() * canvas.width;
-      const y = Math.random() * canvas.height;
-      const width = 80 + Math.random() * 240;
-      const height = 10 + Math.random() * 32;
-      context.beginPath();
-      context.ellipse(x, y, width, height, Math.random() * Math.PI, 0, Math.PI * 2);
-      context.fill();
-    }
-    context.globalAlpha = 1;
-
-    return canvas;
-  }
-
-  private drawContinent(context: CanvasRenderingContext2D, points: Array<[number, number]>): void {
-    context.beginPath();
-    points.forEach(([x, y], index) => {
-      if (index === 0) {
-        context.moveTo(x, y);
-        return;
-      }
-
-      context.lineTo(x, y);
-    });
-    context.closePath();
-    context.fill();
-
-    context.strokeStyle = 'rgba(181, 231, 188, 0.55)';
-    context.lineWidth = 7;
-    context.stroke();
   }
 
   private disposeMaterial(material: THREE.Material | THREE.Material[] | undefined): void {
