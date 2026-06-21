@@ -9,15 +9,70 @@ import {
   inject,
 } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
+import { RouterLink } from '@angular/router';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 
 @Component({
   selector: 'app-satellite-trilateration-page',
+  imports: [RouterLink],
   template: `
     <section class="fixed inset-0 overflow-hidden bg-black">
       <h1 class="sr-only">Satellite Trilateration Earth Globe</h1>
       <canvas #globeCanvas class="block size-full"></canvas>
+
+      <button
+        class="absolute right-4 top-4 z-10 grid size-10 place-items-center rounded-md border border-white/15 bg-black/45 text-sm font-semibold text-white backdrop-blur transition hover:bg-black/65"
+        type="button"
+        [attr.aria-label]="controlsHidden ? 'Show controls' : 'Hide controls'"
+        (click)="controlsHidden = !controlsHidden"
+      >
+        {{ controlsHidden ? '+' : '-' }}
+      </button>
+
+      @if (!controlsHidden) {
+        <div class="absolute bottom-4 left-1/2 z-10 flex -translate-x-1/2 items-center gap-2 rounded-md border border-white/15 bg-black/45 p-2 text-white backdrop-blur">
+          <a
+            class="grid size-9 place-items-center rounded-md text-sm font-semibold transition hover:bg-white/15"
+            routerLink="/simulations"
+            aria-label="Back to simulations"
+          >
+            ←
+          </a>
+          <button
+            class="grid size-9 place-items-center rounded-md text-lg font-semibold transition hover:bg-white/15"
+            type="button"
+            aria-label="Zoom in"
+            (click)="zoomIn()"
+          >
+            +
+          </button>
+          <button
+            class="grid size-9 place-items-center rounded-md text-lg font-semibold transition hover:bg-white/15"
+            type="button"
+            aria-label="Zoom out"
+            (click)="zoomOut()"
+          >
+            -
+          </button>
+          <button
+            class="grid size-9 place-items-center rounded-md text-sm font-semibold transition hover:bg-white/15"
+            type="button"
+            aria-label="Reset view"
+            (click)="resetView()"
+          >
+            ↺
+          </button>
+          <button
+            class="grid size-9 place-items-center rounded-md text-sm font-semibold transition hover:bg-white/15"
+            type="button"
+            [attr.aria-label]="autoRotate ? 'Pause rotation' : 'Resume rotation'"
+            (click)="toggleAutoRotate()"
+          >
+            {{ autoRotate ? 'Ⅱ' : '▶' }}
+          </button>
+        </div>
+      }
     </section>
   `,
 })
@@ -36,6 +91,8 @@ export class SatelliteTrilaterationPage implements AfterViewInit, OnDestroy {
   private earth?: THREE.Mesh;
   private stars?: THREE.Points;
   private earthTexture?: THREE.Texture;
+  protected controlsHidden = false;
+  protected autoRotate = true;
 
   ngAfterViewInit(): void {
     if (!isPlatformBrowser(this.platformId)) {
@@ -86,7 +143,7 @@ export class SatelliteTrilaterationPage implements AfterViewInit, OnDestroy {
     this.controls.enableZoom = true;
     this.controls.zoomSpeed = 0.9;
     this.controls.enablePan = false;
-    this.controls.autoRotate = true;
+    this.controls.autoRotate = this.autoRotate;
     this.controls.autoRotateSpeed = 0.35;
     this.controls.minDistance = 2.1;
     this.controls.maxDistance = 7;
@@ -159,6 +216,49 @@ export class SatelliteTrilaterationPage implements AfterViewInit, OnDestroy {
     this.camera.updateProjectionMatrix();
     this.renderer.setSize(window.innerWidth, window.innerHeight, false);
   };
+
+  protected zoomIn(): void {
+    this.moveCameraBy(0.82);
+  }
+
+  protected zoomOut(): void {
+    this.moveCameraBy(1.18);
+  }
+
+  protected resetView(): void {
+    if (!this.camera || !this.controls) {
+      return;
+    }
+
+    this.camera.position.set(0, 0, 4.2);
+    this.controls.target.set(0, 0, 0);
+    this.controls.update();
+  }
+
+  protected toggleAutoRotate(): void {
+    this.autoRotate = !this.autoRotate;
+
+    if (this.controls) {
+      this.controls.autoRotate = this.autoRotate;
+    }
+  }
+
+  private moveCameraBy(multiplier: number): void {
+    if (!this.camera || !this.controls) {
+      return;
+    }
+
+    const direction = this.camera.position.clone().sub(this.controls.target);
+    const nextDistance = THREE.MathUtils.clamp(
+      direction.length() * multiplier,
+      this.controls.minDistance,
+      this.controls.maxDistance,
+    );
+
+    direction.setLength(nextDistance);
+    this.camera.position.copy(this.controls.target).add(direction);
+    this.controls.update();
+  }
 
   private createStars(): THREE.Points {
     const starCount = 900;
