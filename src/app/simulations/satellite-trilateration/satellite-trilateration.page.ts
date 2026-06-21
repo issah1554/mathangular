@@ -79,21 +79,21 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
         <aside class="h-full overflow-y-auto border-l border-white/15 bg-black/60 text-white shadow-2xl backdrop-blur-md">
           @if (!selectedSatellite) {
             <div class="p-5">
-              <div class="grid grid-cols-2 rounded-md border border-white/10 bg-white/5 p-1 text-sm font-semibold">
+              <div class="flex items-center gap-6 border-b border-white/10 text-sm font-semibold">
                 <button
-                  class="rounded px-3 py-2 transition hover:bg-white/10"
+                  class="border-b-2 px-0 pb-2 transition"
                   type="button"
-                  [class.bg-cyan-400]="activeDrawerTab === 'satellites'"
-                  [style.color]="activeDrawerTab === 'satellites' ? '#000000' : 'rgb(255 255 255 / 0.7)'"
+                  [style.border-color]="activeDrawerTab === 'satellites' ? 'rgb(34 211 238)' : 'transparent'"
+                  [style.color]="activeDrawerTab === 'satellites' ? 'rgb(255 255 255)' : 'rgb(255 255 255 / 0.55)'"
                   (click)="activeDrawerTab = 'satellites'"
                 >
                   Satellites
                 </button>
                 <button
-                  class="rounded px-3 py-2 transition hover:bg-white/10"
+                  class="border-b-2 px-0 pb-2 transition"
                   type="button"
-                  [class.bg-cyan-400]="activeDrawerTab === 'receiver'"
-                  [style.color]="activeDrawerTab === 'receiver' ? '#000000' : 'rgb(255 255 255 / 0.7)'"
+                  [style.border-color]="activeDrawerTab === 'receiver' ? 'rgb(34 211 238)' : 'transparent'"
+                  [style.color]="activeDrawerTab === 'receiver' ? 'rgb(255 255 255)' : 'rgb(255 255 255 / 0.55)'"
                   (click)="activeDrawerTab = 'receiver'"
                 >
                   Receiver
