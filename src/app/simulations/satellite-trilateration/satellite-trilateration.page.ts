@@ -198,7 +198,8 @@ export class SatelliteTrilaterationPage implements AfterViewInit, OnDestroy {
   private stars?: THREE.Points;
   private earthTexture?: THREE.Texture;
   private satelliteSystems: Array<{
-    pivot: THREE.Object3D;
+    root: THREE.Object3D;
+    satellitePivot: THREE.Object3D;
     body: THREE.Object3D;
     orbit: THREE.LineLoop;
     speed: number;
@@ -237,9 +238,8 @@ export class SatelliteTrilaterationPage implements AfterViewInit, OnDestroy {
     this.disposeMaterial(this.earth?.material);
     this.stars?.geometry.dispose();
     this.disposeMaterial(this.stars?.material);
-    this.satelliteSystems.forEach(({ pivot, body, orbit }) => {
-      this.scene?.remove(pivot);
-      this.scene?.remove(orbit);
+    this.satelliteSystems.forEach(({ root, body, orbit }) => {
+      this.scene?.remove(root);
       this.disposeObject(body);
       orbit.geometry.dispose();
       this.disposeMaterial(orbit.material);
@@ -334,8 +334,8 @@ export class SatelliteTrilaterationPage implements AfterViewInit, OnDestroy {
       this.stars.rotation.y -= 0.0004;
     }
 
-    this.satelliteSystems.forEach(({ pivot, speed }) => {
-      pivot.rotation.y += speed;
+    this.satelliteSystems.forEach(({ satellitePivot, speed }) => {
+      satellitePivot.rotation.y += speed;
     });
 
     this.controls?.update();
@@ -443,7 +443,8 @@ export class SatelliteTrilaterationPage implements AfterViewInit, OnDestroy {
   }
 
   private createSatelliteSystems(): Array<{
-    pivot: THREE.Object3D;
+    root: THREE.Object3D;
+    satellitePivot: THREE.Object3D;
     body: THREE.Object3D;
     orbit: THREE.LineLoop;
     speed: number;
@@ -458,24 +459,27 @@ export class SatelliteTrilaterationPage implements AfterViewInit, OnDestroy {
       const phase = (index / 8) * Math.PI * 2;
       const speed = 0.0038 + index * 0.00035;
 
-      const pivot = new THREE.Object3D();
-      pivot.rotation.z = inclination;
-      pivot.rotation.y = phase;
+      const root = new THREE.Object3D();
+      root.rotation.z = inclination;
+      root.rotation.y = phase;
+
+      const satellitePivot = new THREE.Object3D();
+      satellitePivot.rotation.y = phase;
 
       const satellite = this.createSatelliteBody();
       satellite.position.set(radius, 0, 0);
       satellite.scale.setScalar(0.85);
-      pivot.add(satellite);
+      satellitePivot.add(satellite);
 
       const orbit = this.createOrbitPath(radius);
-      orbit.rotation.z = inclination;
-      orbit.rotation.y = phase;
 
-      this.scene?.add(orbit);
-      this.scene?.add(pivot);
+      root.add(orbit);
+      root.add(satellitePivot);
+      this.scene?.add(root);
 
       return {
-        pivot,
+        root,
+        satellitePivot,
         body: satellite,
         orbit,
         speed,
@@ -543,10 +547,9 @@ export class SatelliteTrilaterationPage implements AfterViewInit, OnDestroy {
   }
 
   private updateSatelliteVisibility(): void {
-    this.satelliteSystems.forEach(({ pivot, orbit }, index) => {
+    this.satelliteSystems.forEach(({ root }, index) => {
       const visible = index < this.satelliteCount;
-      pivot.visible = visible;
-      orbit.visible = visible;
+      root.visible = visible;
     });
   }
 
