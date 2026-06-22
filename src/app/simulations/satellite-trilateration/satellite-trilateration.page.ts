@@ -314,7 +314,37 @@ type AxisGizmoItem = {
           } @else {
             <div class="flex min-h-full flex-col">
               <div class="border-b border-white/10 p-5">
-                <nav class="flex items-center gap-2 text-sm font-semibold" aria-label="Satellite controls breadcrumb">
+                <div class="flex items-center gap-6 border-b border-white/10 text-sm font-semibold">
+                  <button
+                    class="border-b-2 px-0 pb-2 transition"
+                    type="button"
+                    [style.border-color]="activeDrawerTab === 'globe' ? 'rgb(34 211 238)' : 'transparent'"
+                    [style.color]="activeDrawerTab === 'globe' ? 'rgb(255 255 255)' : 'rgb(255 255 255 / 0.55)'"
+                    (click)="selectedSatelliteId = null; activeDrawerTab = 'globe'"
+                  >
+                    Globe
+                  </button>
+                  <button
+                    class="border-b-2 px-0 pb-2 transition"
+                    type="button"
+                    [style.border-color]="activeDrawerTab === 'satellites' ? 'rgb(34 211 238)' : 'transparent'"
+                    [style.color]="activeDrawerTab === 'satellites' ? 'rgb(255 255 255)' : 'rgb(255 255 255 / 0.55)'"
+                    (click)="selectedSatelliteId = null; activeDrawerTab = 'satellites'"
+                  >
+                    Satellites
+                  </button>
+                  <button
+                    class="border-b-2 px-0 pb-2 transition"
+                    type="button"
+                    [style.border-color]="activeDrawerTab === 'receiver' ? 'rgb(34 211 238)' : 'transparent'"
+                    [style.color]="activeDrawerTab === 'receiver' ? 'rgb(255 255 255)' : 'rgb(255 255 255 / 0.55)'"
+                    (click)="selectedSatelliteId = null; activeDrawerTab = 'receiver'"
+                  >
+                    Receiver
+                  </button>
+                </div>
+
+                <nav class="mt-5 flex items-center gap-2 text-sm font-semibold" aria-label="Satellite controls breadcrumb">
                   <button
                     class="text-cyan-300 transition hover:text-cyan-100"
                     type="button"
@@ -325,13 +355,6 @@ type AxisGizmoItem = {
                   <span class="text-white/35">&gt;</span>
                   <span class="text-white">Satellite {{ selectedSatellite.id }}</span>
                 </nav>
-                <div class="mt-4 flex items-center gap-3">
-                  <span class="size-4 rounded-full" [style.background-color]="selectedSatellite.color"></span>
-                  <div>
-                    <p class="text-xs font-semibold uppercase tracking-wide text-white/50">Selected satellite</p>
-                    <h2 class="text-xl font-semibold">Satellite {{ selectedSatellite.id }}</h2>
-                  </div>
-                </div>
               </div>
 
               <div class="flex-1 space-y-5 p-5">
